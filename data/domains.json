@@ -1,0 +1,65 @@
+[
+  {
+    "id": "agentic_architecture",
+    "label": "Agentic Architecture & Orchestration",
+    "weight": 0.27,
+    "task_statements": [
+      "Design and implement agentic loops that correctly handle stop_reason values (tool_use, end_turn, max_tokens)",
+      "Apply hub-and-spoke multi-agent patterns with appropriate orchestrator/subagent trust boundaries",
+      "Determine valid escalation triggers vs. situations the agent should handle autonomously",
+      "Scope subagent permissions following least-privilege principles",
+      "Choose between parallel and sequential subagent execution based on data dependencies",
+      "Return tool results as correctly structured tool_result content blocks"
+    ]
+  },
+  {
+    "id": "tool_design_mcp",
+    "label": "Tool Design & MCP Integration",
+    "weight": 0.18,
+    "task_statements": [
+      "Distinguish MCP primitives: tools (executable actions), resources (read-only data), prompts (templates)",
+      "Design tool schemas with correct required/optional fields and descriptions",
+      "Return structured error responses from tool handlers",
+      "Choose between stdio and HTTP transport for MCP servers",
+      "Design resource URIs following MCP conventions"
+    ]
+  },
+  {
+    "id": "claude_code",
+    "label": "Claude Code Configuration & Workflows",
+    "weight": 0.20,
+    "task_statements": [
+      "Configure CLAUDE.md at appropriate hierarchy levels (project root, subdirectory, .claude/)",
+      "Use the -p flag for non-interactive Claude Code execution in CI/CD pipelines",
+      "Create and use custom slash commands in .claude/commands/",
+      "Configure permissions in .claude/settings.json to allow or deny specific tool calls",
+      "Distinguish the Read, Grep, and Glob tools and when to use each",
+      "Manage context with /compact and --continue flags"
+    ]
+  },
+  {
+    "id": "prompt_engineering",
+    "label": "Prompt Engineering & Structured Output",
+    "weight": 0.20,
+    "task_statements": [
+      "Produce reliably structured JSON output using schema definitions and validation-retry loops",
+      "Use XML tags to delimit sections of complex prompts",
+      "Apply few-shot examples to specify output format",
+      "Use the prefill technique to constrain response format",
+      "Position chain-of-thought instructions for maximum effectiveness",
+      "Set temperature appropriately for deterministic vs. creative tasks"
+    ]
+  },
+  {
+    "id": "context_reliability",
+    "label": "Context Management & Reliability",
+    "weight": 0.15,
+    "task_statements": [
+      "Apply prompt caching with cache_control to reduce cost on repeated system prompts",
+      "Manage context window limits with sliding window or summarization strategies",
+      "Use the Batch API for high-volume asynchronous workloads",
+      "Budget token usage for tool results to avoid context overflow",
+      "Implement retry strategies with exponential backoff and validation feedback"
+    ]
+  }
+]
