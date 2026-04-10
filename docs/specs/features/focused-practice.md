@@ -1,6 +1,6 @@
 # Focused Practice (Mini-Exams)
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Created:** 2026-04-10
 > **Implemented:** _pending_
 
@@ -202,12 +202,27 @@ Two entry points exist:
 
 ## Post-Implementation Notes
 
-> _Fill after implementation._
-
 ### Commits
+
+- `115f20f` — feat: extend exam builder with domain-filtered, least-practiced question selection
+- `841cc71` — feat: support practice mode in exam session creation API
+- `7717a52` — feat: add practice setup page with domain selection and question count
+- `606f4c9` — feat: adapt history and report pages for practice mode
 
 ### Architectural Decisions
 
+- `getLeastPracticedQuestions` lives in the DB layer (not exam-builder) because it needs `LEFT JOIN exam_answers`. `buildPracticeExam` is a pure function that just slices + shuffles a pre-sorted pool — keeping exam-builder fully testable without a DB.
+- Timer duration for practice (30 min) is set at session creation time via `time_limit_seconds: 1800` in `createSession`. The exam page reads `session.time_limit_seconds` directly — no code change to the exam page was needed.
+- `mode` added to `ConsolidatedRow` (and propagated through `buildConsolidatedRow`) so the history table and report summary bar can branch on practice vs. exam without fetching the full session.
+- Practice page uses a Suspense boundary around the inner component that calls `useSearchParams()` — required by Next.js App Router to avoid hydration mismatches.
+
 ### Deviations from Spec
 
+- Per-domain % correct not shown in the DomainSelector checkboxes (spec FR3 says "showing the user's overall % in that domain"). This would require a new aggregation query. Skipped for simplicity; functionality not in any AC.
+- `source_exam_id` is passed via `?source=` query param from the WeakAreasBanner if the user navigates from a specific exam report. WeakAreasBanner currently only passes `?domains=` — source linking is wired in the API but the UI doesn't pass it yet (low priority, no AC).
+- Task 5 ("wire Praticar Áreas Fracas button") was already complete from spec C implementation — WeakAreasBanner already navigates to `/practice?domains=...`.
+
 ### Lessons Learned
+
+- Separating the DB sort query from the pure shuffle function (`getLeastPracticedQuestions` + `buildPracticeExam`) makes both fully testable independently. The DB method is implicitly covered by database.test.ts; the pure function has dedicated unit tests.
+- Next.js App Router requires any component using `useSearchParams()` to be wrapped in `<Suspense>`. Without it the page throws at build time.
