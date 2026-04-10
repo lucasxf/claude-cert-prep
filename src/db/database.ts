@@ -1,7 +1,11 @@
 import Database from 'better-sqlite3'
 import fs from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { v7 as uuidv7 } from 'uuid'
+
+// import.meta.dirname is Node 22+; this works on Node 20 ESM
+const _dirname = path.dirname(fileURLToPath(import.meta.url))
 import type {
     AnswerChoice,
     Domain,
@@ -100,7 +104,7 @@ export class DatabaseClient {
 
     /** Applies schema.sql — idempotent (uses CREATE TABLE IF NOT EXISTS). */
     private initialize(): void {
-        const schemaPath = path.join(import.meta.dirname, 'schema.sql')
+        const schemaPath = path.join(_dirname, 'schema.sql')
         const schema = fs.readFileSync(schemaPath, 'utf-8')
         this.db.exec(schema)
 
