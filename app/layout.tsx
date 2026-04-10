@@ -15,3 +15,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </html>
     )
 }
+
+// Navigation is embedded per-page to keep the layout minimal (no shared nav bar
+// needed — each page has its own contextual back-link).

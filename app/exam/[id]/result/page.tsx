@@ -139,16 +139,22 @@ export default function ResultPage() {
                 {/* Actions */}
                 <div className="flex flex-col sm:flex-row gap-3">
                     <button
-                        onClick={() => router.push('/')}
+                        onClick={() => router.push(`/exam/${id}/report`)}
                         className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-blue-700 transition-colors"
                     >
-                        Novo Simulado
+                        Ver Relatório Completo
                     </button>
                     <button
                         onClick={() => router.push('/history')}
                         className="flex-1 bg-white border border-gray-300 text-gray-700 py-3 px-6 rounded-xl font-medium hover:bg-gray-50 transition-colors"
                     >
                         Ver Histórico
+                    </button>
+                    <button
+                        onClick={() => router.push('/')}
+                        className="flex-1 bg-white border border-gray-300 text-gray-700 py-3 px-6 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+                    >
+                        Novo Simulado
                     </button>
                 </div>
             </div>
