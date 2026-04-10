@@ -164,6 +164,36 @@ export interface ScenarioInfo {
 }
 
 // ---------------------------------------------------------------------------
+// History & Reports
+// ---------------------------------------------------------------------------
+
+export interface DomainBreakdownRow {
+    domain: Domain
+    label: string
+    weight: number
+    total_questions: number
+    correct: number
+    /** Percentage correct in this domain (0–100). */
+    percentage: number
+    /** True when percentage < 70 and the domain had at least one question. */
+    is_weak_area: boolean
+}
+
+export interface ConsolidatedRow {
+    session_id: string
+    /** Chronological exam number (1 = oldest, N = most recent). */
+    exam_number: number
+    date: string // ISO string (started_at)
+    duration_seconds: number
+    correct_count: number | null
+    total_questions: number
+    /** Percentage correct (0–100), null when correct_count is unknown. */
+    percentage: number | null
+    score: number | null
+    passed: boolean | null
+}
+
+// ---------------------------------------------------------------------------
 // Question filters (used by DatabaseClient and API routes)
 // ---------------------------------------------------------------------------
 
