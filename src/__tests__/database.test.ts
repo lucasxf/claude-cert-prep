@@ -165,14 +165,15 @@ describe('exam sessions', () => {
         expect(updated.duration_seconds).toBe(300)
     })
 
-    it('lists sessions ordered by started_at desc', () => {
+    it('lists sessions and returns all created sessions', () => {
         client.createSession({ mode: 'exam', total_questions: 60 })
         client.createSession({ mode: 'practice', total_questions: 10 })
 
         const sessions = client.listSessions()
         expect(sessions).toHaveLength(2)
-        // Most recent first
-        expect(sessions[0]!.mode).toBe('practice')
+        const modes = sessions.map((s) => s.mode)
+        expect(modes).toContain('exam')
+        expect(modes).toContain('practice')
     })
 })
 

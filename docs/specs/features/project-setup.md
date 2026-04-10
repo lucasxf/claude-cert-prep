@@ -1,8 +1,8 @@
 # Project Setup & Infrastructure
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Created:** 2026-04-10
-> **Implemented:** _pending_
+> **Implemented:** 2026-04-10
 
 ---
 
@@ -196,12 +196,24 @@ The `DatabaseClient` in `database.ts` exposes typed methods for each query patte
 
 ## Post-Implementation Notes
 
-> _Fill after implementation._
-
 ### Commits
+
+- `09c8c21` — chore: initialize Next.js project with TypeScript, Tailwind, and Vitest + shared types
+- `2724588` — feat: add SQLite schema and DatabaseClient wrapper
+- `1efaf63` — feat: add domain/scenario reference data and seed script with 30 questions
+- `c343647` — feat: add minimal Next.js app shell
+- `<fix>` — fix: flawed ordering test + better-sqlite3 binary resolved
 
 ### Architectural Decisions
 
+- Used `STRFTIME`-based timestamps via JavaScript (`new Date().toISOString()`) for answer slots; SQLite `CURRENT_TIMESTAMP` has only second precision which causes non-deterministic ordering in tests created within the same second.
+- `better-sqlite3` requires Node 20 LTS on Windows — no pre-built binary exists for Node 24 ABI 137. Project must run on Node 20+.
+
 ### Deviations from Spec
 
+- Next.js resolved to **15.5.15** (spec said 16 — 16 does not exist yet). All other versions match.
+- No `tailwind.config.ts` — Tailwind v4 uses CSS-based config (`@import "tailwindcss"` in globals.css + postcss.config.mjs). Config file is not needed.
+
 ### Lessons Learned
+
+- `npm install --ignore-scripts` skips prebuild binary downloads for native modules, not just compilation. Always run `npm rebuild <package>` after switching Node versions when native modules are involved.
