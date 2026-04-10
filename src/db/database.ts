@@ -203,6 +203,51 @@ export class DatabaseClient {
     }
 
     /**
+     * Returns per-domain correctness stats across all exam sessions.
+     * Used by the MCP server's get_progress tool.
+     */
+    getDomainStats(domain?: string): {
+        overall: { total: number; correct: number; percentage: number }
+        by_domain: Array<{ domain: string; total: number; correct: number; percentage: number }>
+    } {
+        const sql = `
+            SELECT q.domain,
+                   COUNT(*) AS total,
+                   SUM(CASE WHEN ea.is_correct = 1 THEN 1 ELSE 0 END) AS correct
+            FROM exam_answers ea
+            JOIN questions q ON ea.question_id = q.id
+            WHERE ea.selected_answer IS NOT NULL
+              ${domain ? 'AND q.domain = ?' : ''}
+            GROUP BY q.domain
+            ORDER BY q.domain
+        `
+        const rows = (
+            domain
+                ? this.db.prepare(sql).all(domain)
+                : this.db.prepare(sql).all()
+        ) as Array<{ domain: string; total: number; correct: number }>
+
+        const by_domain = rows.map(r => ({
+            domain: r.domain,
+            total: r.total,
+            correct: r.correct,
+            percentage: r.total === 0 ? 0 : Math.round((r.correct / r.total) * 100),
+        }))
+
+        const overallTotal = by_domain.reduce((s, r) => s + r.total, 0)
+        const overallCorrect = by_domain.reduce((s, r) => s + r.correct, 0)
+
+        return {
+            overall: {
+                total: overallTotal,
+                correct: overallCorrect,
+                percentage: overallTotal === 0 ? 0 : Math.round((overallCorrect / overallTotal) * 100),
+            },
+            by_domain,
+        }
+    }
+
+    /**
      * Returns questions for the given domains ordered by how many times they
      * have been answered correctly across all sessions (ascending — least
      * practiced first). Used for practice session question selection.
