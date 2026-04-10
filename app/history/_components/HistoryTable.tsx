@@ -105,15 +105,21 @@ export function HistoryTable({ rows }: HistoryTableProps) {
                                     {row.score ?? '—'}
                                 </td>
                                 <td className="px-4 py-3">
-                                    <span
-                                        className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                                            row.passed
-                                                ? 'bg-green-100 text-green-700'
-                                                : 'bg-red-100 text-red-600'
-                                        }`}
-                                    >
-                                        {row.passed ? 'Aprovado' : 'Reprovado'}
-                                    </span>
+                                    {row.mode === 'practice' ? (
+                                        <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-100 text-blue-700">
+                                            Prática
+                                        </span>
+                                    ) : (
+                                        <span
+                                            className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                                row.passed
+                                                    ? 'bg-green-100 text-green-700'
+                                                    : 'bg-red-100 text-red-600'
+                                            }`}
+                                        >
+                                            {row.passed ? 'Aprovado' : 'Reprovado'}
+                                        </span>
+                                    )}
                                 </td>
                             </tr>
                         ))}

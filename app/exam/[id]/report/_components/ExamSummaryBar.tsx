@@ -41,15 +41,21 @@ export function ExamSummaryBar({ row }: ExamSummaryBarProps) {
 
                 {/* Status */}
                 <div className="text-center">
-                    <span
-                        className={`inline-block px-4 py-1.5 rounded-full text-sm font-semibold ${
-                            row.passed
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-red-100 text-red-800'
-                        }`}
-                    >
-                        {row.passed ? 'Aprovado' : 'Reprovado'}
-                    </span>
+                    {row.mode === 'practice' ? (
+                        <span className="inline-block px-4 py-1.5 rounded-full text-sm font-semibold bg-blue-100 text-blue-800">
+                            Prática
+                        </span>
+                    ) : (
+                        <span
+                            className={`inline-block px-4 py-1.5 rounded-full text-sm font-semibold ${
+                                row.passed
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-red-100 text-red-800'
+                            }`}
+                        >
+                            {row.passed ? 'Aprovado' : 'Reprovado'}
+                        </span>
+                    )}
                 </div>
 
                 {/* Stats */}
