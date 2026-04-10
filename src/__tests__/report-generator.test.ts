@@ -73,6 +73,7 @@ describe('buildConsolidatedRow', () => {
         const row = buildConsolidatedRow(baseSession, 3)
         expect(row.session_id).toBe('session-1')
         expect(row.exam_number).toBe(3)
+        expect(row.mode).toBe('exam')
         expect(row.date).toBe('2026-04-10T10:00:00.000Z')
         expect(row.duration_seconds).toBe(3600)
         expect(row.correct_count).toBe(45)

@@ -64,6 +64,22 @@ export function allocateCounts(
     return new Map(sorted.map(a => [a.domain, a.floor]))
 }
 
+/**
+ * Selects a focused practice set from a pre-sorted pool.
+ *
+ * The caller is responsible for ordering `sortedPool` by least-practiced first
+ * (ascending correct-answer count). This function takes the first `count`
+ * questions and shuffles them to randomize display order.
+ *
+ * @param sortedPool - questions sorted least-practiced first
+ * @param count - maximum questions to include (all taken when pool is smaller)
+ */
+export function buildPracticeExam(sortedPool: Question[], count: number): Question[] {
+    const selected = sortedPool.slice(0, count)
+    shuffle(selected)
+    return selected
+}
+
 /** Fisher-Yates shuffle — mutates the array in place. */
 function shuffle<T>(arr: T[]): void {
     for (let i = arr.length - 1; i > 0; i--) {

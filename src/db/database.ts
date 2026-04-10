@@ -202,6 +202,28 @@ export class DatabaseClient {
         return rows.map(rowToQuestion)
     }
 
+    /**
+     * Returns questions for the given domains ordered by how many times they
+     * have been answered correctly across all sessions (ascending — least
+     * practiced first). Used for practice session question selection.
+     */
+    getLeastPracticedQuestions(domains: Domain[], count: number): Question[] {
+        if (domains.length === 0) return []
+        const placeholders = domains.map(() => '?').join(', ')
+        const sql = `
+            SELECT q.*,
+                   COALESCE(SUM(CASE WHEN ea.is_correct = 1 THEN 1 ELSE 0 END), 0) AS correct_count
+            FROM questions q
+            LEFT JOIN exam_answers ea ON q.id = ea.question_id
+            WHERE q.domain IN (${placeholders})
+            GROUP BY q.id
+            ORDER BY correct_count ASC
+            LIMIT ?
+        `
+        const rows = this.db.prepare(sql).all(...domains, count) as QuestionRow[]
+        return rows.map(rowToQuestion)
+    }
+
     countQuestions(domain?: Domain): number {
         if (domain) {
             const result = this.db.prepare(

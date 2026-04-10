@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { allocateCounts, buildExam } from '../exam-builder.js'
+import { allocateCounts, buildExam, buildPracticeExam } from '../exam-builder.js'
 import type { Domain, DomainInfo, Question } from '../types.js'
 
 const DOMAINS: DomainInfo[] = [
@@ -115,5 +115,56 @@ describe('buildExam', () => {
     it('handles empty pool gracefully', () => {
         const exam = buildExam([], DOMAINS, 60)
         expect(exam).toHaveLength(0)
+    })
+})
+
+// ---------------------------------------------------------------------------
+// buildPracticeExam
+// ---------------------------------------------------------------------------
+
+describe('buildPracticeExam', () => {
+    it('returns exactly count questions when pool is sufficient', () => {
+        const pool = Array.from({ length: 20 }, (_, i) => makeQuestion('claude_code', i))
+        const result = buildPracticeExam(pool, 10)
+        expect(result).toHaveLength(10)
+    })
+
+    it('returns all questions when pool is smaller than count', () => {
+        const pool = Array.from({ length: 5 }, (_, i) => makeQuestion('tool_design_mcp', i))
+        const result = buildPracticeExam(pool, 10)
+        expect(result).toHaveLength(5)
+    })
+
+    it('returns empty array for empty pool', () => {
+        expect(buildPracticeExam([], 10)).toHaveLength(0)
+    })
+
+    it('only selects from the first `count` entries (least-practiced preference)', () => {
+        // Pool of 20 questions; we want 5 — only first 5 IDs should appear
+        const pool = Array.from({ length: 20 }, (_, i) => makeQuestion('agentic_architecture', i))
+        const preferredIds = new Set(pool.slice(0, 5).map(q => q.id))
+        const result = buildPracticeExam(pool, 5)
+        for (const q of result) {
+            expect(preferredIds.has(q.id)).toBe(true)
+        }
+    })
+
+    it('does not return duplicate questions', () => {
+        const pool = Array.from({ length: 15 }, (_, i) => makeQuestion('prompt_engineering', i))
+        const result = buildPracticeExam(pool, 10)
+        const ids = result.map(q => q.id)
+        expect(new Set(ids).size).toBe(ids.length)
+    })
+
+    it('shuffles the selected questions (different order from input)', () => {
+        // Large enough that probability of identical order is negligible
+        const pool = Array.from({ length: 20 }, (_, i) => makeQuestion('context_reliability', i))
+        const inputOrder = pool.slice(0, 15).map(q => q.id).join(',')
+        const result1 = buildPracticeExam(pool, 15)
+        const result2 = buildPracticeExam(pool, 15)
+        // At least one run should differ from the sorted input order
+        const allSame = result1.map(q => q.id).join(',') === inputOrder &&
+                        result2.map(q => q.id).join(',') === inputOrder
+        expect(allSame).toBe(false)
     })
 })

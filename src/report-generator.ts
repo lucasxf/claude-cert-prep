@@ -69,6 +69,7 @@ export function buildConsolidatedRow(
     return {
         session_id: session.id,
         exam_number: examNumber,
+        mode: session.mode,
         date: session.started_at,
         duration_seconds: session.duration_seconds,
         correct_count,

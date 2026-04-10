@@ -183,6 +183,7 @@ export interface ConsolidatedRow {
     session_id: string
     /** Chronological exam number (1 = oldest, N = most recent). */
     exam_number: number
+    mode: ExamMode
     date: string // ISO string (started_at)
     duration_seconds: number
     correct_count: number | null
