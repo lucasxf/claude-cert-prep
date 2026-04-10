@@ -1,43 +1,42 @@
-import { buildExam } from '@/exam-builder'
+import { NextResponse } from 'next/server'
+import { buildExam, buildPracticeExam } from '@/exam-builder'
 import { getDb } from '@/db/database'
 import type { Domain, DomainInfo } from '@/types'
 import domainsJson from '../../../data/domains.json'
-import { NextResponse } from 'next/server'
 
 const DOMAINS = domainsJson as DomainInfo[]
 
 // ---------------------------------------------------------------------------
-// POST /api/exams — create a new exam session
+// POST /api/exams — create a new exam or practice session
 // ---------------------------------------------------------------------------
 
 export async function POST(request: Request) {
     try {
         const body = (await request.json()) as {
             mode?: 'exam' | 'practice'
-            domain_filter?: Domain[]
+            /** Domains to focus on (practice mode). */
+            domains?: Domain[]
+            /** Question count (practice mode, default 10). */
             total_questions?: number
+            /** ID of the full exam this practice session derives from. */
+            source_exam_id?: string
         }
 
         const mode = body.mode ?? 'exam'
-        const totalQuestions = body.total_questions ?? (mode === 'exam' ? 60 : 15)
-
         const db = getDb()
 
-        // Select questions from pool
-        const pool = db.listQuestions(
-            body.domain_filter ? { domain: body.domain_filter[0] } : {},
-        )
+        let examQuestions
 
-        // For domain-filtered practice, use all matching questions
-        const examQuestions =
-            body.domain_filter && body.domain_filter.length > 0
-                ? (() => {
-                      const filtered = pool
-                      // shuffle and take totalQuestions
-                      const shuffled = [...filtered].sort(() => Math.random() - 0.5)
-                      return shuffled.slice(0, totalQuestions)
-                  })()
-                : buildExam(db.listQuestions(), DOMAINS, totalQuestions)
+        if (mode === 'practice' && body.domains && body.domains.length > 0) {
+            // Practice: prefer least-practiced questions in the selected domains
+            const count = body.total_questions ?? 10
+            const sorted = db.getLeastPracticedQuestions(body.domains, count)
+            examQuestions = buildPracticeExam(sorted, count)
+        } else {
+            // Full exam: proportional domain distribution
+            const totalQuestions = body.total_questions ?? 60
+            examQuestions = buildExam(db.listQuestions(), DOMAINS, totalQuestions)
+        }
 
         if (examQuestions.length === 0) {
             return NextResponse.json(
@@ -46,18 +45,16 @@ export async function POST(request: Request) {
             )
         }
 
-        // Create session
         const session = db.createSession({
             mode,
             total_questions: examQuestions.length,
-            domain_filter: body.domain_filter,
+            // Practice sessions use 30-min timer; full exam uses 120-min (default)
+            time_limit_seconds: mode === 'practice' ? 1800 : undefined,
+            domain_filter: body.domains,
+            source_exam_id: body.source_exam_id,
         })
 
-        // Pre-create answer slots in exam order
-        db.createAnswerSlots(
-            session.id,
-            examQuestions.map(q => q.id),
-        )
+        db.createAnswerSlots(session.id, examQuestions.map(q => q.id))
 
         return NextResponse.json({ session, questions: examQuestions }, { status: 201 })
     } catch (err) {
