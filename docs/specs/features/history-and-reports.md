@@ -1,6 +1,6 @@
 # History & Reports
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Created:** 2026-04-10
 > **Implemented:** _pending_
 
@@ -268,12 +268,26 @@ The history table's **sequential Número** is computed as: rank of the session o
 
 ## Post-Implementation Notes
 
-> _Fill after implementation._
-
 ### Commits
+
+- `a3c1ecc` — feat: add report generator and CSV/XLSX export utility
+- `1690795` — feat: add report and export API routes
+- `f6c0923` — feat: add history page with consolidated exam table and export
+- `4c00109` — feat: add single exam report with domain breakdown and navigation wiring
 
 ### Architectural Decisions
 
+- Sequential exam numbering is computed at query time (not stored in the DB): `listCompletedSessions()` orders by `started_at ASC` and the API layer assigns 1-based indices. This keeps the schema clean and the number stays correct if sessions are deleted.
+- `ExportButtons` is a shared Client Component (in `app/history/_components/`) imported by both the history page and the report page. The import uses a relative path since the `@/` alias maps to `src/`, not `app/`.
+- `Buffer → BodyInit` type mismatch: Node.js `Buffer<ArrayBufferLike>` is not directly assignable to the Web Fetch `BodyInit` type in TypeScript 5.7+. Wrapped with `new Uint8Array(buf)` for the `Response` body in export routes — `Uint8Array` is a valid `BufferSource`.
+- `// @ts-expect-error` used in export tests where ExcelJS's `xlsx.load()` expects the older non-generic `Buffer` type. Tests still exercise the full roundtrip (write → re-read → inspect); the suppression is narrowly scoped per call site.
+
 ### Deviations from Spec
 
+- `app/layout.tsx` has no shared nav bar — navigation is contextual (per-page back-links). The layout comment documents this intent. This is consistent with the exam-simulator implementation.
+- History page is a Client Component (not Server Component as the spec suggested) for consistency with the rest of the app. Both approaches produce the same UX; client-side fetch avoids coupling the page to the DB singleton.
+
 ### Lessons Learned
+
+- The `@/` path alias maps to `src/`, not `app/`. Components shared across `app/` subtrees must use relative imports.
+- TypeScript 5.7 introduced a generic `Buffer<T>` type that breaks assignments to older interfaces (`BodyInit`, ExcelJS's `Buffer`). Fix pattern: `new Uint8Array(buf)` for Web API recipients; `// @ts-expect-error` for third-party types.
