@@ -77,6 +77,7 @@ function rowToAnswer(row: Record<string, unknown>): ExamAnswer {
         selected_answer: (row['selected_answer'] as AnswerChoice | null) ?? null,
         is_correct: row['is_correct'] == null ? null : Boolean(row['is_correct']),
         answered_at: (row['answered_at'] as string | null) ?? null,
+        time_spent_seconds: (row['time_spent_seconds'] as number | null) ?? null,
     }
 }
 
@@ -102,6 +103,13 @@ export class DatabaseClient {
         const schemaPath = path.join(import.meta.dirname, 'schema.sql')
         const schema = fs.readFileSync(schemaPath, 'utf-8')
         this.db.exec(schema)
+
+        // Migration: add time_spent_seconds if it was added after the initial schema
+        try {
+            this.db.exec('ALTER TABLE exam_answers ADD COLUMN time_spent_seconds INTEGER')
+        } catch {
+            // Column already exists — ignore
+        }
     }
 
     close(): void {
@@ -294,7 +302,12 @@ export class DatabaseClient {
         return rows.map(rowToAnswer)
     }
 
-    submitAnswer(sessionId: string, questionId: string, selected: AnswerChoice): ExamAnswer {
+    submitAnswer(
+        sessionId: string,
+        questionId: string,
+        selected: AnswerChoice,
+        timeSpentSeconds?: number,
+    ): ExamAnswer {
         const question = this.getQuestion(questionId)
         if (!question) throw new Error(`submitAnswer: question ${questionId} not found`)
 
@@ -303,15 +316,73 @@ export class DatabaseClient {
 
         this.db.prepare(`
             UPDATE exam_answers
-            SET selected_answer = ?, is_correct = ?, answered_at = ?
+            SET selected_answer = ?, is_correct = ?, answered_at = ?, time_spent_seconds = ?
             WHERE exam_session_id = ? AND question_id = ?
-        `).run(selected, is_correct, now, sessionId, questionId)
+        `).run(selected, is_correct, now, timeSpentSeconds ?? null, sessionId, questionId)
 
         const row = this.db.prepare(
             'SELECT * FROM exam_answers WHERE exam_session_id = ? AND question_id = ?'
         ).get(sessionId, questionId) as Record<string, unknown>
 
         return rowToAnswer(row)
+    }
+
+    // -------------------------------------------------------------------------
+    // Session lifecycle helpers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Returns the session's questions in exam order (via exam_answers join),
+     * alongside the answer slots.
+     */
+    getSessionWithQuestions(sessionId: string): {
+        session: ExamSession
+        questions: Question[]
+        answers: ExamAnswer[]
+    } | undefined {
+        const session = this.getSession(sessionId)
+        if (!session) return undefined
+
+        const rows = this.db.prepare(`
+            SELECT q.*, ea.question_order, ea.id as answer_id,
+                   ea.selected_answer, ea.is_correct, ea.answered_at,
+                   ea.time_spent_seconds, ea.exam_session_id
+            FROM exam_answers ea
+            JOIN questions q ON ea.question_id = q.id
+            WHERE ea.exam_session_id = ?
+            ORDER BY ea.question_order
+        `).all(sessionId) as Record<string, unknown>[]
+
+        const questions: Question[] = rows.map(r => rowToQuestion(r as unknown as QuestionRow))
+        const answers: ExamAnswer[] = rows.map(r => ({
+            id: r['answer_id'] as string,
+            exam_session_id: r['exam_session_id'] as string,
+            question_id: r['id'] as string,
+            question_order: r['question_order'] as number,
+            selected_answer: (r['selected_answer'] as AnswerChoice | null) ?? null,
+            is_correct: r['is_correct'] == null ? null : Boolean(r['is_correct']),
+            answered_at: (r['answered_at'] as string | null) ?? null,
+            time_spent_seconds: (r['time_spent_seconds'] as number | null) ?? null,
+        }))
+
+        return { session, questions, answers }
+    }
+
+    /** Freezes the timer. Records current elapsed duration. */
+    pauseSession(sessionId: string, durationSeconds: number): ExamSession {
+        return this.updateSession(sessionId, {
+            status: 'paused',
+            paused_at: new Date().toISOString(),
+            duration_seconds: durationSeconds,
+        })
+    }
+
+    /** Resumes a paused session. */
+    resumeSession(sessionId: string): ExamSession {
+        return this.updateSession(sessionId, {
+            status: 'active',
+            paused_at: null,
+        })
     }
 }
 

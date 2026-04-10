@@ -63,9 +63,10 @@ CREATE TABLE IF NOT EXISTS exam_answers (
     exam_session_id TEXT NOT NULL REFERENCES exam_sessions(id),
     question_id     TEXT NOT NULL REFERENCES questions(id),
     question_order  INTEGER NOT NULL, -- 1-based position within the exam
-    selected_answer TEXT CHECK (selected_answer IN ('A', 'B', 'C', 'D')),
-    is_correct      INTEGER,          -- SQLite boolean: 0 or 1
-    answered_at     DATETIME,
+    selected_answer     TEXT CHECK (selected_answer IN ('A', 'B', 'C', 'D')),
+    is_correct          INTEGER,          -- SQLite boolean: 0 or 1
+    answered_at         DATETIME,
+    time_spent_seconds  INTEGER,          -- seconds spent on this question
     UNIQUE (exam_session_id, question_id)
 );
 
