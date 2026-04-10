@@ -13,7 +13,7 @@ Dual purpose:
 ## Stack
 
 - TypeScript (strict mode, ESM), Node.js 20+
-- Next.js 16 (App Router) + React 19 + Tailwind CSS
+- Next.js 15 (App Router) + React 19 + Tailwind CSS
 - `@anthropic-ai/sdk` — question generation via Claude API
 - `@modelcontextprotocol/sdk` — MCP server for the question bank
 - `better-sqlite3` — local SQLite storage (questions + session history)

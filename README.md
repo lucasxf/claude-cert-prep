@@ -23,7 +23,7 @@ Dual-purpose project:
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | Next.js 16 (App Router) + React 19 + Tailwind CSS |
+| Frontend | Next.js 15 (App Router) + React 19 + Tailwind CSS v4 |
 | Language | TypeScript (strict, ESM) |
 | Storage | SQLite via `better-sqlite3` |
 | AI | Anthropic SDK (`@anthropic-ai/sdk`) |
