@@ -247,6 +247,14 @@ export class DatabaseClient {
         return row ? rowToSession(row as Record<string, unknown>) : undefined
     }
 
+    /** Returns all completed sessions ordered oldest → newest (for sequential numbering). */
+    listCompletedSessions(): ExamSession[] {
+        const rows = this.db
+            .prepare(`SELECT * FROM exam_sessions WHERE status = 'completed' ORDER BY started_at ASC`)
+            .all() as Record<string, unknown>[]
+        return rows.map(rowToSession)
+    }
+
     listSessions(limit = 50): ExamSession[] {
         const rows = this.db
             .prepare('SELECT * FROM exam_sessions ORDER BY started_at DESC LIMIT ?')
