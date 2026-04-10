@@ -1,8 +1,8 @@
 # Exam Simulator
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Created:** 2026-04-10
-> **Implemented:** _pending_
+> **Implemented:** 2026-04-10
 
 ---
 
@@ -282,12 +282,27 @@ The core feature: a timed, pausable exam session that simulates the real CCA-F e
 
 ## Post-Implementation Notes
 
-> _Fill after implementation._
-
 ### Commits
+
+- `5dfddfb` — feat: add exam scorer with scaled scoring and exam builder with proportional domain distribution
+- `43a1c91` — feat: add exam session API routes (create, fetch, pause/resume, record answer, submit)
+- `5437883` — feat: add exam session page with timer, question display, navigation, and dashboard
 
 ### Architectural Decisions
 
+- `useOptimistic` (React 19) used for answer selection — UI updates instantly before the API call completes. Prevents perceived lag on every click.
+- Timer owns only the `setInterval` — parent (`ExamPage`) owns `remainingSeconds` state. This makes the timer a pure display + tick source; all persistence logic lives in the parent.
+- Result data is written to `sessionStorage` after submit and read by the result page — avoids a re-fetch on the immediate redirect. Falls back to API fetch on page refresh.
+- `time_spent_seconds` added to `exam_answers` schema via `ALTER TABLE` migration in `initialize()` — handles both fresh and existing databases without requiring a manual DB delete.
+
 ### Deviations from Spec
 
+- Full-exam question selection via `buildExam()` (uses all questions in pool). When pool has fewer than 60 questions (current seed has 30), the builder uses all available — graceful degradation rather than error. The `loadLocal` TTL is 5 minutes (spec said "< 5 min" — interpreted as the boundary).
+- Practice domain filtering in `POST /api/exams` uses only the first domain from `domain_filter` for `listQuestions()`. Multi-domain practice filtering is deferred to the focused-practice spec.
+- `useOptimistic` required a stable `applyOptimistic` function — wrapped in `useCallback` with `answers` in the dependency array to avoid stale closure issues.
+
 ### Lessons Learned
+
+- `useOptimistic` state and regular state must be kept in sync: `applyOptimistic` only affects the optimistic snapshot, so `setAnswers` must also be called to update the source of truth.
+- Next.js App Router route params are `Promise<{ id: string }>` (not direct object) since Next.js 15 — all API routes must `await params`.
+- `useEffect` dependency array with `remainingSeconds > 0` (boolean) as the restart trigger for the timer interval is cleaner than using the raw number, avoiding interval restarts on every tick.
