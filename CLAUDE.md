@@ -83,6 +83,8 @@ Specs live in `docs/specs/features/`. Use the template at `docs/specs/template.m
 
 ## Environment
 
+The app runs without any environment variables. `.env.local` is only needed for `npm run generate` (question generation via Claude API).
+
 ```bash
 # .env.local — only needed for `npm run generate`
 ANTHROPIC_API_KEY=sk-ant-...

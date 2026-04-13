@@ -2,8 +2,13 @@
   "name": "claude-cert-prep",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=20.0.0 <21"
+  },
   "scripts": {
+    "predev": "node scripts/ensure-seeded.mjs",
     "dev": "next dev",
+    "prestart": "node scripts/ensure-seeded.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

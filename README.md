@@ -1,6 +1,55 @@
 # CCA-F Exam Simulator
 
-Practice exams and study tools for the **Claude Certified Architect – Foundations (CCA-F)** certification.
+Simulador de provas e ferramentas de estudo para a certificação **Claude Certified Architect – Foundations (CCA-F)**.
+
+---
+
+## Como rodar
+
+**Pré-requisito:** Node.js 20 LTS — use `nvm use` se tiver o nvm instalado, ou baixe em [nodejs.org](https://nodejs.org).
+
+```bash
+git clone https://github.com/lucasxf/claude-cert-prep.git
+cd claude-cert-prep
+npm install
+npm run dev
+```
+
+Abra [http://localhost:3000](http://localhost:3000). O banco SQLite é criado e populado automaticamente no primeiro `npm run dev` com 30 questões de exemplo.
+
+### Opcional: gerar novas questões com a API da Claude
+
+Copie o arquivo de exemplo e adicione sua chave:
+
+```bash
+cp .env.example .env.local
+# edite .env.local e coloque sua ANTHROPIC_API_KEY
+npm run generate
+```
+
+### Solução de problemas
+
+**Erro ao instalar `better-sqlite3`?**
+Confirme que está no Node 20 (`node -v`). Em Node 22+ não há binário pré-compilado; no Windows pode ser necessário `npm rebuild better-sqlite3` após instalar as Build Tools do Visual Studio.
+
+---
+
+## Getting Started
+
+**Prerequisite:** Node.js 20 LTS.
+
+```bash
+git clone https://github.com/lucasxf/claude-cert-prep.git
+cd claude-cert-prep
+npm install
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000). The SQLite database is created and seeded automatically on the first run.
+
+**No environment variables are required to run the app.** Copy `.env.example` to `.env.local` only if you want to generate new questions via the Claude API (`npm run generate`).
+
+---
 
 ## Purpose
 
@@ -29,10 +78,6 @@ Dual-purpose project:
 | AI | Anthropic SDK (`@anthropic-ai/sdk`) |
 | MCP | `@modelcontextprotocol/sdk` |
 | Tests | Vitest |
-
-## Getting Started
-
-> Setup instructions will be added after the `project-setup` spec is implemented.
 
 ## Architecture
 
