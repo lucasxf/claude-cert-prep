@@ -48,7 +48,14 @@ export async function GET(req: Request): Promise<Response> {
                         : `—/${row.total_questions}`,
                 percentage_formatted: row.percentage != null ? `${row.percentage}%` : '—',
                 score: row.score ?? '—',
-                status: row.passed === true ? 'Aprovado' : row.passed === false ? 'Reprovado' : '—',
+                status:
+                    session.mode === 'practice'
+                        ? 'Prática'
+                        : row.passed === true
+                          ? 'Aprovado'
+                          : row.passed === false
+                            ? 'Reprovado'
+                            : '—',
             }
         })
         // Most recent first in the export

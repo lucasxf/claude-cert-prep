@@ -42,6 +42,11 @@ export const TOOL_DEFINITIONS = [
                     type: 'number',
                     description: 'Maximum questions to return (default: 10, max: 50)',
                 },
+                exclude_ids: {
+                    type: 'array',
+                    items: { type: 'string' },
+                    description: 'Question UUIDs to exclude from results (e.g. already-seen questions)',
+                },
             },
         },
     },
@@ -171,11 +176,15 @@ function handleListQuestions(args: ToolArgs, db: DatabaseClient): ToolCallResult
     const limit = Math.min(Number(args['limit'] ?? 10), 50)
     const domain = args['domain'] as Domain | undefined
     const difficulty = args['difficulty'] as string | undefined
+    const exclude_ids = Array.isArray(args['exclude_ids'])
+        ? (args['exclude_ids'] as string[])
+        : undefined
 
     const questions = db.listQuestions({
         domain,
         difficulty: difficulty as 'foundation' | 'intermediate' | 'advanced' | undefined,
         limit,
+        exclude_ids,
     })
 
     // Omit correct_answer from list results — use get_question for full details

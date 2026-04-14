@@ -94,3 +94,66 @@ ANTHROPIC_API_KEY=sk-ant-...
 
 - `main` — production-ready, reached via PRs only
 - `develop` — integration branch for feature work
+
+## Security & Correctness Directives
+
+These rules emerged from security and correctness review and must be followed for all future changes.
+
+### Never expose answer keys to the client before exam submission
+
+API routes that return question data to the client during an active exam session **must strip** `correct_answer`, `explanation`, and `wrong_explanations` before responding. Only `get_question` (MCP) and post-submission result/report endpoints may return full question data.
+
+```ts
+// Correct pattern in exam creation response:
+const safeQuestions = examQuestions.map(
+    ({ correct_answer: _ca, explanation: _ex, wrong_explanations: _we, ...q }) => q,
+)
+```
+
+### Never interpolate non-parameterized values into SQL strings
+
+All values that flow into SQL queries — including numeric limits — must use bound parameters (`?`). String interpolation is forbidden even for seemingly safe values like integers.
+
+```ts
+// Wrong:
+const limit = filter.limit ? `LIMIT ${filter.limit}` : ''
+// Correct:
+if (filter.limit) { params.push(filter.limit); limitClause = 'LIMIT ?' }
+```
+
+### Always score against the full question set; treat unanswered as incorrect
+
+When scoring an exam, build `AnswerRecord` entries for **every question** in the session, not just answered ones. Filtering out unanswered questions inflates scores and misaligns domain attribution when array indices are reused. Use Maps keyed by `question_id`:
+
+```ts
+const questionDomainById = new Map(result.questions.map(q => [q.id, q.domain]))
+const answerByQuestionId = new Map(result.answers.map(a => [a.question_id, a]))
+const answerRecords = result.questions.map(q => ({
+    domain: questionDomainById.get(q.id)!,
+    is_correct: answerByQuestionId.get(q.id)?.is_correct === true,
+}))
+```
+
+### Practice mode requires explicit domain selection — never fall through to exam mode
+
+If `mode === 'practice'` and `domains` is absent or empty, return HTTP 422. Never silently fall through to full-exam question selection while still creating a `practice` session.
+
+### Keep MCP tool schemas in sync with handler implementations
+
+If a tool description mentions a capability (e.g., `exclude_ids`), the `inputSchema` must declare it and the handler must implement it. Either implement the feature or remove the claim from the description — misleading MCP clients breaks integrations silently.
+
+### Fire-and-forget API calls must not use `await`
+
+If a fetch call is intentionally non-blocking (fire-and-forget), do not use `await`. Attach a `.catch()` handler to avoid unhandled promise rejections:
+
+```ts
+fetch(url, options).catch(console.error)
+```
+
+### Practice sessions must be labeled as such in exports
+
+When generating CSV/XLSX exports, check `session.mode` and output `'Prática'` for practice sessions instead of `'—'`. The export status must match what the history UI displays.
+
+### Seed idempotency requires a UNIQUE constraint in the schema
+
+Catching `SQLITE_CONSTRAINT_UNIQUE` in seed scripts only works if the relevant column has an actual unique index in `schema.sql`. A fresh `uuidv7()` primary key is never a duplicate — dedup logic must target a content column (e.g., `stem`).

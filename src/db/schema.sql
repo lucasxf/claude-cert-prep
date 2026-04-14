@@ -74,6 +74,10 @@ CREATE TABLE IF NOT EXISTS exam_answers (
 -- Indices
 -- ---------------------------------------------------------------------------
 
+-- Prevents duplicate questions from being inserted (e.g. running `npm run seed` twice).
+-- seed.ts catches SQLITE_CONSTRAINT_UNIQUE on this index to skip existing records.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_questions_stem ON questions(stem);
+
 CREATE INDEX IF NOT EXISTS idx_questions_domain     ON questions(domain);
 CREATE INDEX IF NOT EXISTS idx_questions_scenario   ON questions(scenario);
 CREATE INDEX IF NOT EXISTS idx_questions_difficulty ON questions(difficulty);

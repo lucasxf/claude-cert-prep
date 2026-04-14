@@ -32,13 +32,19 @@ export async function POST(request: Request, { params }: Params) {
             domainsJson.map(d => [d.id as Domain, d.weight]),
         ) as Record<Domain, number>
 
-        // Build answer records for scoring (only answered questions count)
-        const answerRecords: AnswerRecord[] = result.answers
-            .filter(a => a.is_correct !== null)
-            .map((a, idx) => ({
-                domain: result.questions[idx]!.domain,
-                is_correct: a.is_correct!,
-            }))
+        // Build answer records for scoring — one record per question in original
+        // order, treating unanswered questions as incorrect. Using maps keyed by
+        // question_id avoids index misalignment after any filtering.
+        const questionDomainById = new Map(result.questions.map(q => [q.id, q.domain]))
+        const answerByQuestionId = new Map(result.answers.map(a => [a.question_id, a]))
+
+        const answerRecords: AnswerRecord[] = result.questions.map(q => {
+            const answer = answerByQuestionId.get(q.id)
+            return {
+                domain: questionDomainById.get(q.id)!,
+                is_correct: answer?.is_correct === true,
+            }
+        })
 
         const scoreResult = scoreExam(answerRecords, domainWeights)
         const durationSeconds = body.duration_seconds ?? result.session.duration_seconds

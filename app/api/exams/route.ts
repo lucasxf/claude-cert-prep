@@ -25,6 +25,14 @@ export async function POST(request: Request) {
         const mode = body.mode ?? 'exam'
         const db = getDb()
 
+        // Practice mode requires at least one domain
+        if (mode === 'practice' && (!body.domains || body.domains.length === 0)) {
+            return NextResponse.json(
+                { error: 'Practice mode requires at least one domain in the `domains` field.' },
+                { status: 422 },
+            )
+        }
+
         let examQuestions
 
         if (mode === 'practice' && body.domains && body.domains.length > 0) {
@@ -56,7 +64,13 @@ export async function POST(request: Request) {
 
         db.createAnswerSlots(session.id, examQuestions.map(q => q.id))
 
-        return NextResponse.json({ session, questions: examQuestions }, { status: 201 })
+        // Strip answer keys — clients must not receive correct_answer, explanation,
+        // or wrong_explanations before submitting the exam.
+        const safeQuestions = examQuestions.map(
+            ({ correct_answer: _ca, explanation: _ex, wrong_explanations: _we, ...q }) => q,
+        )
+
+        return NextResponse.json({ session, questions: safeQuestions }, { status: 201 })
     } catch (err) {
         console.error('POST /api/exams error:', err)
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

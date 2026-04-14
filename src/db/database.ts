@@ -195,8 +195,12 @@ export class DatabaseClient {
         }
 
         const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
-        const limit = filter.limit ? `LIMIT ${filter.limit}` : ''
-        const sql = `SELECT * FROM questions ${where} ORDER BY RANDOM() ${limit}`
+        let limitClause = ''
+        if (filter.limit) {
+            params.push(filter.limit)
+            limitClause = 'LIMIT ?'
+        }
+        const sql = `SELECT * FROM questions ${where} ORDER BY RANDOM() ${limitClause}`
 
         const rows = this.db.prepare(sql).all(...params) as QuestionRow[]
         return rows.map(rowToQuestion)

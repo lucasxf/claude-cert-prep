@@ -162,8 +162,8 @@ export default function ExamPage() {
             applyOptimistic({ questionId: question.id, choice })
             setAnswers(prev => ({ ...prev, [question.id]: choice }))
 
-            // Persist to API (fire and forget — don't block UI)
-            await fetch(`/api/exams/${id}/answers`, {
+            // Persist to API (fire and forget — does not block UI auto-advance)
+            fetch(`/api/exams/${id}/answers`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -171,7 +171,7 @@ export default function ExamPage() {
                     selected_answer: choice,
                     time_spent_seconds: timeSpent,
                 }),
-            })
+            }).catch(console.error)
 
             // Auto-advance to next unanswered question
             const nextUnanswered = payload.questions.findIndex(
