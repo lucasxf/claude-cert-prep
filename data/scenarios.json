@@ -1,0 +1,32 @@
+[
+  {
+    "id": "customer_support_agent",
+    "label": "Customer Support Resolution Agent",
+    "description": "An agentic system that handles customer inquiries end-to-end: looks up order status, processes refunds, escalates complex issues, and maintains conversation context across multi-turn interactions. Integrates with CRM, order management, and payment systems via tools."
+  },
+  {
+    "id": "code_generation",
+    "label": "Code Generation with Claude Code",
+    "description": "A developer using Claude Code to implement features, refactor existing code, write tests, and debug. Claude Code has file read/write access, can run shell commands, and operates inside a Git repository with CI/CD integration."
+  },
+  {
+    "id": "multi_agent_research",
+    "label": "Multi-Agent Research System",
+    "description": "An orchestrator that coordinates specialized subagents (literature search, data analysis, citation verification, summary writing, quality review) to produce comprehensive research reports. Uses hub-and-spoke pattern with a central orchestrator."
+  },
+  {
+    "id": "developer_productivity",
+    "label": "Developer Productivity with Claude",
+    "description": "A team using Claude as a development assistant configured via CLAUDE.md files, custom slash commands, and MCP servers. Claude helps with code review, documentation, ticket triage, and project-specific workflows."
+  },
+  {
+    "id": "ci_cd_claude_code",
+    "label": "Claude Code for Continuous Integration",
+    "description": "Claude Code integrated into a CI/CD pipeline to automatically review pull requests, check for security issues, validate documentation, and generate release notes. Runs non-interactively on every PR."
+  },
+  {
+    "id": "structured_data_extraction",
+    "label": "Structured Data Extraction",
+    "description": "A pipeline that extracts structured information from unstructured documents (contracts, invoices, medical records) and outputs validated JSON. Uses schema definitions, validation-retry loops, and the Batch API for high-volume processing."
+  }
+]

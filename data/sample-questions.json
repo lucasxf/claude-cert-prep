@@ -1,0 +1,602 @@
+[
+  {
+    "domain": "agentic_architecture",
+    "scenario": "customer_support_agent",
+    "stem": "Your Customer Support Agent processes a user request and receives a response from Claude with stop_reason set to 'tool_use'. The response includes a tool_use content block requesting execution of the lookup_order tool. What should your orchestration code do next?",
+    "options": {
+      "A": "Execute the tool, append the tool result to the conversation history, and send the updated history back to Claude in a new API call",
+      "B": "Execute the tool and return the result directly to the user without sending it back to Claude",
+      "C": "Check if the tool result is satisfactory before deciding whether to send it back to Claude or directly to the user",
+      "D": "Execute the tool, start a new conversation with Claude containing only the tool result, discarding the previous history"
+    },
+    "correct_answer": "A",
+    "explanation": "The agentic loop pattern requires appending tool results to the existing conversation history and sending the complete history back to Claude. This preserves context and allows Claude to interpret the tool result and decide on next steps (potentially calling another tool or generating a final response). Discarding history (D) breaks context. Returning directly to user (B) skips Claude's interpretation. Client-side filtering (C) undermines the agentic loop pattern.",
+    "wrong_explanations": {
+      "B": "Bypassing Claude after tool execution breaks the agentic loop. Claude needs to see the tool result to decide whether to call additional tools or compose the final response.",
+      "C": "The orchestration layer should not second-guess Claude's tool calls. The agentic loop is: Claude requests tool → execute → return result → Claude decides next action.",
+      "D": "Starting a new conversation discards all prior context. The agentic loop maintains a single conversation thread with accumulated history."
+    },
+    "difficulty": "foundation",
+    "tags": ["stop_reason", "agentic_loop", "tool_use", "conversation_history"]
+  },
+  {
+    "domain": "agentic_architecture",
+    "scenario": "multi_agent_research",
+    "stem": "You are architecting a Multi-Agent Research System with a central orchestrator and 5 specialized subagents. A junior engineer proposes allowing subagents to directly call each other to reduce orchestrator load. What is the primary architectural concern with this approach?",
+    "options": {
+      "A": "It violates the hub-and-spoke pattern, creating peer-to-peer connections that make the system harder to monitor, debug, and control",
+      "B": "Direct subagent communication increases latency because each call travels over the network twice",
+      "C": "The MCP protocol does not support subagent-to-subagent communication",
+      "D": "Subagents calling each other would exhaust the shared context window faster"
+    },
+    "correct_answer": "A",
+    "explanation": "Hub-and-spoke keeps the orchestrator as the single coordination point, enabling centralized monitoring, clear audit trails, controlled escalation, and predictable behavior. Peer-to-peer connections between subagents create cycles, make debugging exponentially harder, and can lead to uncoordinated actions. The orchestrator must remain the authority for all task delegation.",
+    "wrong_explanations": {
+      "B": "Latency is not the primary architectural concern. The real issue is loss of centralized control and observability.",
+      "C": "MCP doesn't dictate subagent topology. The constraint is an architectural best practice, not a protocol limitation.",
+      "D": "Context window management is a separate concern. The core problem with direct subagent communication is loss of orchestrator control."
+    },
+    "difficulty": "intermediate",
+    "tags": ["hub_and_spoke", "multi_agent", "orchestration", "observability"]
+  },
+  {
+    "domain": "agentic_architecture",
+    "scenario": "customer_support_agent",
+    "stem": "Your Customer Support Agent encounters one of several situations. Which situation represents a VALID trigger for escalating to a human agent?",
+    "options": {
+      "A": "The customer has used aggressive language in their message",
+      "B": "The agent has low confidence in its response because the question is ambiguous",
+      "C": "The agent needs to process a full refund on an order over $500 — an irreversible action not pre-authorized by its system prompt",
+      "D": "The customer request requires querying information from more than two systems"
+    },
+    "correct_answer": "C",
+    "explanation": "Valid escalation triggers are: (1) reaching a decision point requiring actions that seem unduly risky, (2) explicit user request for human assistance, (3) situations outside defined scope. Irreversible high-value actions without pre-authorization are a clear case. Aggressive language (A) and ambiguity (B) are not valid triggers — they should be handled by the agent. Multi-system queries (D) are routine agent capability.",
+    "wrong_explanations": {
+      "A": "Handling difficult customer interactions is within scope. Escalating on tone rather than inability to help frustrates customers seeking resolution.",
+      "B": "Low confidence is not a valid escalation trigger. The agent should clarify, acknowledge uncertainty, or use available tools — not escalate.",
+      "D": "Querying multiple systems is standard orchestration. The agent should use its tools to fulfill multi-system requests."
+    },
+    "difficulty": "intermediate",
+    "tags": ["escalation", "human_in_the_loop", "agentic_loop", "risk_management"]
+  },
+  {
+    "domain": "agentic_architecture",
+    "scenario": "developer_productivity",
+    "stem": "You are building a Developer Productivity agent that spawns subagents for code review, test generation, and documentation. The orchestrator has read/write access to the repository. How should the documentation subagent's permissions be scoped?",
+    "options": {
+      "A": "Subagents automatically inherit all permissions from the orchestrator that spawned them",
+      "B": "Subagents start with no permissions and negotiate them with the orchestrator at runtime",
+      "C": "Each subagent should receive only the minimum permissions needed for its specific task — the documentation subagent gets read access, not write",
+      "D": "Subagent permissions are determined by the MCP server providing their tools"
+    },
+    "correct_answer": "C",
+    "explanation": "The principle of least privilege applies to subagents. Even if the orchestrator has broad permissions, each subagent should receive only what its task requires. A documentation subagent needs read access but not write access. Full permission inheritance (A) increases blast radius if a subagent makes errors. Runtime negotiation (B) is impractical overhead. MCP servers provide tool capabilities, not security permissions (D).",
+    "wrong_explanations": {
+      "A": "Automatic full inheritance violates least privilege. A documentation subagent does not need the same write permissions as the orchestrator.",
+      "B": "Runtime permission negotiation creates complex overhead. Permissions should be scoped and granted at subagent creation time.",
+      "D": "MCP servers expose capabilities (tools), not security permissions. Permission scoping is an orchestrator responsibility."
+    },
+    "difficulty": "intermediate",
+    "tags": ["least_privilege", "subagent_permissions", "security", "orchestration"]
+  },
+  {
+    "domain": "agentic_architecture",
+    "scenario": "multi_agent_research",
+    "stem": "Your research orchestrator must: (1) search recent papers, (2) search historical context, (3) gather regulatory data, and (4) compile a bibliography. Tasks 1–3 are independent; task 4 requires output from all three. What execution strategy minimizes total latency?",
+    "options": {
+      "A": "Execute all 4 tasks sequentially to ensure data consistency",
+      "B": "Execute tasks 1, 2, and 3 in parallel, then execute task 4 after all three complete",
+      "C": "Execute tasks 1 and 2 in parallel, then task 3, then task 4",
+      "D": "Execute all 4 tasks in parallel and merge results at the end"
+    },
+    "correct_answer": "B",
+    "explanation": "Tasks 1–3 have no data dependencies between them, so fan-out to parallel execution is correct. Task 4 depends on all three and must wait for their completion (fan-in). This is the optimal parallel-then-sequential pattern. Sequential execution (A) multiplies latency unnecessarily. Partial parallelism (C) is suboptimal. Task 4 cannot run in parallel (D) because it requires the others' output.",
+    "wrong_explanations": {
+      "A": "Sequential execution of independent tasks multiplies latency unnecessarily. Tasks 1, 2, and 3 have no interdependencies.",
+      "C": "There is no technical reason to serialize tasks 1, 2, and 3. All three can run concurrently.",
+      "D": "Task 4 requires the results from tasks 1–3. It cannot execute until those results are available."
+    },
+    "difficulty": "foundation",
+    "tags": ["parallel_execution", "fan_out_fan_in", "latency_optimization", "dependencies"]
+  },
+  {
+    "domain": "agentic_architecture",
+    "scenario": "code_generation",
+    "stem": "Your Code Generation agent calls a run_tests tool that returns exit code 1 with full test output. How should the tool result be returned to Claude in the next API call?",
+    "options": {
+      "A": "Return a tool_result content block referencing the tool_use_id, with the test output as content",
+      "B": "Return a new user message with the error text, not referencing the original tool_use block",
+      "C": "Return a tool_result with is_error=true and only the exception message — test output should be discarded to save tokens",
+      "D": "Skip returning the result and add a system prompt update explaining the tests failed"
+    },
+    "correct_answer": "A",
+    "explanation": "Tool results must be returned as tool_result content blocks referencing the original tool_use_id. This is required for Claude to correlate the result with its tool call. A non-zero exit code is an application-level failure, not an invocation error — the full test output is valuable context for Claude to diagnose what failed and decide next steps.",
+    "wrong_explanations": {
+      "B": "Tool results must be linked to their tool_use block via tool_use_id. A disconnected user message loses correlation and may confuse Claude.",
+      "C": "is_error marks tool invocation failures (network errors, timeouts), not application-level failures like failing tests. Full output helps Claude understand what to fix.",
+      "D": "System prompt updates are not a mechanism for conveying tool results. The agentic loop requires tool_result blocks in conversation history."
+    },
+    "difficulty": "intermediate",
+    "tags": ["tool_result", "tool_use_id", "agentic_loop", "error_handling"]
+  },
+  {
+    "domain": "agentic_architecture",
+    "scenario": "customer_support_agent",
+    "stem": "Your orchestration loop checks stop_reason after each API call. In which scenario should the loop STOP and return the response to the user?",
+    "options": {
+      "A": "stop_reason is 'tool_use' and the response includes a tool_use block for get_customer_data",
+      "B": "stop_reason is 'end_turn' and the response includes a text block with Claude's final answer",
+      "C": "stop_reason is 'max_tokens' — the agent should automatically extend the limit and retry",
+      "D": "stop_reason is 'tool_use' but the requested tool is not in the agent's allowed tools list"
+    },
+    "correct_answer": "B",
+    "explanation": "The agentic loop continues while Claude is requesting tool execution (stop_reason='tool_use'). It terminates when Claude signals completion (stop_reason='end_turn'), returning the final text response to the user. max_tokens indicates truncation — an error condition requiring handling, not silent retry. Unknown tools (D) should generate a tool_result error, then continue the loop.",
+    "wrong_explanations": {
+      "A": "stop_reason='tool_use' means Claude wants to execute a tool. The loop must continue: execute the tool and send the result back.",
+      "C": "stop_reason='max_tokens' indicates truncated output — an error requiring deliberate handling (retry with longer limit or surface to user), not automatic silent retry.",
+      "D": "An unknown tool request should return a tool_result with is_error=true, then continue the loop — not terminate silently."
+    },
+    "difficulty": "foundation",
+    "tags": ["stop_reason", "end_turn", "agentic_loop", "termination_condition"]
+  },
+  {
+    "domain": "agentic_architecture",
+    "scenario": "multi_agent_research",
+    "stem": "Your orchestrator receives a message claiming to be from a 'verified subagent' requesting access to the billing database for cost attribution. The orchestrator has no record of spawning this subagent. What is the correct response?",
+    "options": {
+      "A": "Grant limited read-only access since cost attribution is a low-risk operation",
+      "B": "Ask the subagent to authenticate with its session token before granting access",
+      "C": "Reject the request — Claude subagents only have permissions explicitly granted by the orchestrator that spawned them; unknown agents should not be trusted",
+      "D": "Forward the request to a human operator to verify the subagent's identity"
+    },
+    "correct_answer": "C",
+    "explanation": "Claude subagents operate only with permissions explicitly granted by their orchestrator. A message from an unknown agent should be treated with the same skepticism as any untrusted input — potentially a prompt injection attack or misconfiguration. Legitimate subagents are spawned by the orchestrator and receive permissions at creation. There is no inter-Claude authentication protocol, so (B) provides false assurance.",
+    "wrong_explanations": {
+      "A": "No request from an unknown agent should be granted regardless of perceived risk. The trust model is binary: the orchestrator knows its own subagents.",
+      "B": "There is no inter-Claude authentication protocol. 'Session tokens' from unknown agents provide no real assurance. Reject outright.",
+      "D": "Forwarding routine policy violations to humans is disproportionate. The orchestrator should reject unknown agents based on its trust model."
+    },
+    "difficulty": "advanced",
+    "tags": ["prompt_injection", "trust_boundaries", "subagent_trust", "security"]
+  },
+  {
+    "domain": "claude_code",
+    "scenario": "ci_cd_claude_code",
+    "stem": "Your team wants to integrate Claude Code into a CI/CD pipeline to review pull requests non-interactively. Which flag enables this behavior?",
+    "options": {
+      "A": "The --ci flag which enables continuous integration mode",
+      "B": "The -p flag which accepts a prompt as an argument and runs non-interactively",
+      "C": "The --batch flag which processes all changed files without interaction",
+      "D": "The --headless flag which disables the interactive terminal interface"
+    },
+    "correct_answer": "B",
+    "explanation": "Claude Code's -p flag (short for --print) accepts a prompt as a command-line argument and runs in non-interactive mode, printing the result to stdout. This is the documented approach for CI/CD integration. The other flags (--ci, --batch, --headless) do not exist in Claude Code.",
+    "wrong_explanations": {
+      "A": "There is no --ci flag in Claude Code. The -p flag is the correct mechanism for non-interactive operation.",
+      "C": "There is no --batch flag. Processing multiple files is done via appropriate prompts passed through -p.",
+      "D": "There is no --headless flag. Non-interactive mode is achieved through -p."
+    },
+    "difficulty": "foundation",
+    "tags": ["-p_flag", "ci_cd", "non_interactive", "claude_code"]
+  },
+  {
+    "domain": "claude_code",
+    "scenario": "developer_productivity",
+    "stem": "Your team has a monorepo with a root CLAUDE.md and a separate CLAUDE.md in the backend/ subdirectory. A developer opens Claude Code from the backend/ directory. Which CLAUDE.md instructions take precedence for behavior specific to backend/?",
+    "options": {
+      "A": "The root CLAUDE.md always takes precedence as it is the project-level configuration",
+      "B": "The backend/CLAUDE.md takes precedence for instructions it defines; root CLAUDE.md fills in the rest",
+      "C": "Only one CLAUDE.md is loaded — whichever Claude Code finds first by traversing up from the working directory",
+      "D": "Both are loaded but the developer must specify which takes precedence via a --config flag"
+    },
+    "correct_answer": "B",
+    "explanation": "Claude Code loads CLAUDE.md files from the current directory up to the project root, with more specific (subdirectory) files taking precedence over less specific ones for overlapping instructions. Both files are loaded and merged: backend/CLAUDE.md wins for backend-specific settings while root CLAUDE.md provides project-wide defaults. This allows fine-grained per-directory configuration.",
+    "wrong_explanations": {
+      "A": "Root does not unconditionally win. The hierarchy is: more specific (subdirectory) overrides less specific (root) for conflicting instructions.",
+      "C": "Claude Code loads multiple CLAUDE.md files and merges them — not just the first one found.",
+      "D": "There is no --config flag for CLAUDE.md precedence. The hierarchy is automatic based on directory nesting."
+    },
+    "difficulty": "intermediate",
+    "tags": ["CLAUDE_md", "hierarchy", "configuration", "subdirectory"]
+  },
+  {
+    "domain": "claude_code",
+    "scenario": "developer_productivity",
+    "stem": "Your team wants to prevent Claude Code from running git push or git reset --hard without explicit confirmation. Where is the correct place to configure this restriction?",
+    "options": {
+      "A": "In CLAUDE.md as a natural language instruction: 'Never run git push or git reset --hard'",
+      "B": "In .claude/settings.json using the permissions.deny array with bash command patterns",
+      "C": "In .env as CLAUDE_DENIED_COMMANDS='git push,git reset'",
+      "D": "In CLAUDE.md using the <restrictions> XML tag with specific command patterns"
+    },
+    "correct_answer": "B",
+    "explanation": ".claude/settings.json is the programmatic enforcement layer for tool permissions. The permissions.deny array accepts patterns like 'Bash(git push*)' and 'Bash(git reset --hard*)' that Claude Code enforces regardless of prompt instructions. Natural language in CLAUDE.md (A) is guidance, not enforcement — Claude can still be prompted to override it. There is no CLAUDE_DENIED_COMMANDS env variable (C) or <restrictions> XML tag (D).",
+    "wrong_explanations": {
+      "A": "Natural language instructions are guidance, not programmatic enforcement. A sufficiently strong prompt could override them. Use settings.json for hard restrictions.",
+      "C": "There is no CLAUDE_DENIED_COMMANDS environment variable. Permissions are configured in .claude/settings.json.",
+      "D": "There is no <restrictions> XML tag in CLAUDE.md. The file uses plain markdown; programmatic restrictions belong in settings.json."
+    },
+    "difficulty": "intermediate",
+    "tags": ["settings_json", "permissions", "deny_list", "programmatic_enforcement"]
+  },
+  {
+    "domain": "claude_code",
+    "scenario": "ci_cd_claude_code",
+    "stem": "A developer wants a reusable Claude Code command that automatically runs the full test suite and formats a summary of failures. Where should this command be stored to be available to all team members in the project?",
+    "options": {
+      "A": "In ~/.claude/commands/ as a personal global command",
+      "B": "In .claude/commands/ at the project root, committed to the repository",
+      "C": "In CLAUDE.md as a named procedure that developers invoke by description",
+      "D": "In package.json as an npm script that pipes to Claude Code"
+    },
+    "correct_answer": "B",
+    "explanation": "Project-scoped custom slash commands live in .claude/commands/ at the project root and are committed to the repository, making them available to all team members when they open Claude Code in that project. ~/.claude/commands/ (A) is for personal commands not shared with the team. CLAUDE.md procedures (C) are informal and not invocable as slash commands. npm scripts (D) are unrelated to Claude Code's command system.",
+    "wrong_explanations": {
+      "A": "~/.claude/commands/ is the personal global location. Commands stored there are only available to the individual developer, not the team.",
+      "C": "CLAUDE.md instructions are not slash commands. They cannot be invoked with /command-name syntax.",
+      "D": "npm scripts have no relationship to Claude Code's slash command system."
+    },
+    "difficulty": "foundation",
+    "tags": ["slash_commands", "custom_commands", ".claude/commands", "team_workflow"]
+  },
+  {
+    "domain": "claude_code",
+    "scenario": "code_generation",
+    "stem": "Claude Code's context window is filling up during a long refactoring session. The developer wants to compress prior conversation context while preserving key decisions made earlier in the session. Which approach is correct?",
+    "options": {
+      "A": "Start a fresh session with claude --new to get a clean context window",
+      "B": "Use /compact to summarize prior conversation context while keeping the most important information",
+      "C": "Use --continue to reload the previous session's full context from disk",
+      "D": "Manually copy the key decisions into a new session's initial prompt"
+    },
+    "correct_answer": "B",
+    "explanation": "/compact triggers an intelligent compression of the conversation history, preserving key decisions, code changes, and context while reducing token usage. This allows the session to continue without losing important information. Starting fresh (A) discards all context. --continue (C) restores a prior session but doesn't compress it. Manual copying (D) is error-prone and misses context.",
+    "wrong_explanations": {
+      "A": "--new starts a fresh session with no prior context — all decisions and code changes from the session are lost.",
+      "C": "--continue resumes a prior session (after claude exits) with its full history. It does not compress an active session.",
+      "D": "Manual copying is fragile, misses implicit context, and defeats the purpose of an AI assistant."
+    },
+    "difficulty": "foundation",
+    "tags": ["/compact", "context_management", "session_continuity", "claude_code"]
+  },
+  {
+    "domain": "claude_code",
+    "scenario": "code_generation",
+    "stem": "A developer asks Claude Code to 'find all files that define the UserService class, then show me every method that calls the database.' Which combination of tools should Claude Code use?",
+    "options": {
+      "A": "Use Grep for both tasks — it can search file contents for both the class definition and the method calls",
+      "B": "Use Glob to find files containing UserService, then Grep to find database calls within those files",
+      "C": "Use Grep to find files by name pattern *UserService*, then Read to load each file",
+      "D": "Use Glob to find files defining UserService (pattern-matching class definitions), then Glob again for database calls"
+    },
+    "correct_answer": "B",
+    "explanation": "Glob matches file name patterns (e.g., '**/*.ts') — not file contents. Grep searches file contents using regex. The correct approach: Glob finds candidate files by name pattern (or a Grep first to identify which files contain 'class UserService'), then Grep searches within those files for database method calls. Glob cannot search inside file contents (A, D wrong). Grep cannot match file names as glob patterns (C wrong).",
+    "wrong_explanations": {
+      "A": "Grep searches file contents, which is correct for finding class definitions and method calls. But Glob, not Grep, is the right tool for file name pattern matching first.",
+      "C": "Grep matches file contents, not file names. '*UserService*' is a glob pattern, not a content regex — use Glob for file name matching.",
+      "D": "Glob only matches file name patterns, not content inside files. It cannot find files that contain 'class UserService' or method calls."
+    },
+    "difficulty": "intermediate",
+    "tags": ["Glob", "Grep", "Read", "tool_selection", "file_search"]
+  },
+  {
+    "domain": "prompt_engineering",
+    "scenario": "structured_data_extraction",
+    "stem": "Your data extraction pipeline must produce JSON with a strict schema for every invoice processed. After testing, you find Claude occasionally wraps the JSON in markdown code fences. What is the most reliable way to prevent this?",
+    "options": {
+      "A": "Add 'Do not use markdown code fences' to the system prompt",
+      "B": "Use the prefill technique: begin the assistant turn with '{' to force Claude to start the JSON directly",
+      "C": "Set temperature to 0 to make the output deterministic",
+      "D": "Post-process responses to strip code fences with a regex"
+    },
+    "correct_answer": "B",
+    "explanation": "The prefill technique — starting the assistant turn with the opening character of the expected format — is the most reliable way to constrain output format. By starting with '{', Claude is forced to continue with valid JSON and cannot insert a code fence before it. Natural language instructions (A) can be overridden by the model's default formatting behavior. Temperature 0 (C) makes outputs more deterministic but doesn't guarantee format. Post-processing (D) is fragile and adds complexity.",
+    "wrong_explanations": {
+      "A": "Natural language instructions improve compliance but are not guaranteed. The prefill technique is a stronger, more reliable constraint.",
+      "C": "Temperature 0 affects word choice randomness, not formatting conventions. Claude may still add code fences at temp=0.",
+      "D": "Post-processing adds fragility — what if the regex misses an edge case? Preventing the problem at the source is more robust."
+    },
+    "difficulty": "intermediate",
+    "tags": ["prefill", "structured_output", "JSON", "format_control"]
+  },
+  {
+    "domain": "prompt_engineering",
+    "scenario": "multi_agent_research",
+    "stem": "You are writing a system prompt for a research summarization agent. The prompt contains: instructions, background context documents, examples, and the user query. To minimize ambiguity and improve Claude's parsing, how should these sections be delimited?",
+    "options": {
+      "A": "Use numbered headers (1. Instructions, 2. Context, 3. Examples) to create clear visual hierarchy",
+      "B": "Use XML tags (<instructions>, <context>, <examples>, <query>) to explicitly delimit each section",
+      "C": "Use triple backtick code blocks to separate each section from the others",
+      "D": "Separate sections with horizontal rules (---) following markdown convention"
+    },
+    "correct_answer": "B",
+    "explanation": "XML tags are Claude's preferred delimiter for structuring complex prompts. They create unambiguous, machine-readable boundaries between sections that Claude reliably recognizes and processes. Numbered headers (A) are visual aids but have no semantic meaning to the model. Triple backticks (C) signal code, not structural sections. Horizontal rules (D) are visual but semantically weak.",
+    "wrong_explanations": {
+      "A": "Numbered headers improve human readability but provide no semantic signal to Claude about where one section ends and another begins.",
+      "C": "Triple backticks signal 'this is code' — using them for non-code content sections creates semantic confusion.",
+      "D": "Horizontal rules are visual separators with no semantic meaning for Claude's prompt parsing."
+    },
+    "difficulty": "foundation",
+    "tags": ["XML_tags", "prompt_structure", "delimiters", "prompt_engineering"]
+  },
+  {
+    "domain": "prompt_engineering",
+    "scenario": "customer_support_agent",
+    "stem": "You want Claude to respond to customer inquiries using a specific tone and format. You have 3 examples of ideal responses. Where should these few-shot examples be placed in the prompt for maximum effectiveness?",
+    "options": {
+      "A": "At the beginning of the system prompt, before the task instructions",
+      "B": "After the task instructions in the system prompt, in an <examples> section",
+      "C": "As the first user turns in the conversation history, before the actual user message",
+      "D": "In a separate file that Claude is instructed to reference"
+    },
+    "correct_answer": "B",
+    "explanation": "Few-shot examples belong after the task instructions in the system prompt, within a clearly labeled <examples> section. This placement ensures Claude has read the instructions before seeing the examples, so the examples reinforce understood requirements rather than being interpreted in isolation. Placing examples before instructions (A) may confuse precedence. Using them as conversation history (C) mixes format examples with actual interaction. External files (D) require a tool call and add latency.",
+    "wrong_explanations": {
+      "A": "Placing examples before instructions means Claude interprets them before understanding the full task context — instructions should come first.",
+      "C": "Using examples as fake conversation history pollutes the actual context and may confuse the model about what's real interaction vs. demonstration.",
+      "D": "Requiring a tool call to load examples adds latency and complexity unnecessarily."
+    },
+    "difficulty": "intermediate",
+    "tags": ["few_shot", "examples", "prompt_structure", "system_prompt"]
+  },
+  {
+    "domain": "prompt_engineering",
+    "scenario": "structured_data_extraction",
+    "stem": "Your contract extraction pipeline uses Claude to extract key terms from legal documents. You want Claude to reason through ambiguous clauses before producing the final JSON output. Where should the chain-of-thought instruction be placed?",
+    "options": {
+      "A": "After the JSON schema in the prompt, so Claude outputs JSON first and then explains its reasoning",
+      "B": "Before the output format specification, instructing Claude to think through the document first, then produce structured output",
+      "C": "In a separate API call before the extraction call, to keep extraction prompts clean",
+      "D": "In the user message rather than the system prompt, to keep system prompts concise"
+    },
+    "correct_answer": "B",
+    "explanation": "Chain-of-thought instructions should precede the output format specification so Claude reasons through the problem before committing to structured output. This produces more accurate extractions for ambiguous content. Asking for JSON first (A) commits Claude to an answer before reasoning. A separate API call (C) is wasteful and misses the integrated reasoning benefit. Placement in user vs. system prompt (D) is secondary; the order within the prompt is what matters.",
+    "wrong_explanations": {
+      "A": "Asking Claude to produce the final answer before reasoning forces it to reason backward, which is less effective for complex extraction tasks.",
+      "C": "A separate reasoning call is wasteful and loses the connection between reasoning and output. Integrated CoT is more effective.",
+      "D": "The system vs. user message distinction is less important than ensuring reasoning comes before output format constraints."
+    },
+    "difficulty": "advanced",
+    "tags": ["chain_of_thought", "reasoning", "structured_output", "prompt_order"]
+  },
+  {
+    "domain": "prompt_engineering",
+    "scenario": "structured_data_extraction",
+    "stem": "Your extraction pipeline processes thousands of documents daily. Some documents are duplicates or near-identical. For which use case would setting temperature=0 be MOST important?",
+    "options": {
+      "A": "Generating human-readable summaries of each document for a newsletter",
+      "B": "Producing structured JSON extraction from documents where identical inputs must always yield identical outputs",
+      "C": "Generating varied question-answer pairs from documents for a training dataset",
+      "D": "Writing personalized email follow-ups based on document content"
+    },
+    "correct_answer": "B",
+    "explanation": "Temperature=0 produces deterministic, reproducible outputs — critical when identical inputs must yield identical structured outputs (for deduplication, caching, regression testing). For creative tasks like summaries (A), varied Q&A generation (C), or personalized emails (D), some variability is desirable and temperature should be non-zero to allow natural language variety.",
+    "wrong_explanations": {
+      "A": "Summaries benefit from natural language variety. Temperature=0 would produce robotically consistent but potentially boring summaries.",
+      "C": "Generating varied Q&A pairs explicitly requires diversity — temperature=0 would produce the same pairs every time, defeating the purpose.",
+      "D": "Personalized emails benefit from natural variation in phrasing. Deterministic output would make all emails sound identical."
+    },
+    "difficulty": "foundation",
+    "tags": ["temperature", "determinism", "structured_output", "reproducibility"]
+  },
+  {
+    "domain": "prompt_engineering",
+    "scenario": "structured_data_extraction",
+    "stem": "Claude is extracting structured data from medical records and occasionally produces JSON that fails schema validation. What is the most robust approach to handle validation failures?",
+    "options": {
+      "A": "Increase max_tokens to give Claude more room to produce correct output",
+      "B": "Implement a validation-retry loop: validate the output, and if it fails, send the validation error back to Claude in a follow-up message requesting a corrected response",
+      "C": "Switch to a deterministic rule-based parser for medical records",
+      "D": "Add 'Always produce valid JSON' to the system prompt"
+    },
+    "correct_answer": "B",
+    "explanation": "A validation-retry loop is the standard pattern for reliable structured output: parse and validate Claude's response, and if it fails, include the specific validation error in a follow-up message. Claude can then correct precisely the failed field rather than regenerating everything. This is a core pattern tested in Domain 4. Increasing max_tokens (A) doesn't help if the format is wrong. Rule-based parsers (C) can't handle the variability of medical records. Prompt instructions (D) improve compliance but don't guarantee it.",
+    "wrong_explanations": {
+      "A": "Validation failures are usually format errors, not truncation. More tokens don't fix a misformatted field.",
+      "C": "Rule-based parsers are brittle for unstructured medical records with varied formats. The power of Claude is handling the variability.",
+      "D": "Prompt instructions improve compliance but are not guaranteed enforcement. A validation-retry loop is the programmatic guarantee."
+    },
+    "difficulty": "intermediate",
+    "tags": ["validation_retry", "structured_output", "error_handling", "JSON_schema"]
+  },
+  {
+    "domain": "tool_design_mcp",
+    "scenario": "multi_agent_research",
+    "stem": "You are designing an MCP server for your research system. It needs to provide a paper database (read-only queries) and bookmark management (state-modifying operations). How should these be modeled?",
+    "options": {
+      "A": "Implement all operations as MCP tools since they both interact with the database",
+      "B": "Implement read-only paper queries as MCP resources and bookmark management as MCP tools",
+      "C": "Implement all operations as MCP resources with different access control levels",
+      "D": "Implement paper queries as MCP prompts and bookmark management as MCP tools"
+    },
+    "correct_answer": "B",
+    "explanation": "MCP defines three primitives with distinct purposes: resources provide read-only data (URI-addressable, safe to cache), tools execute actions that may modify state (require explicit invocation), and prompts provide reusable templates. Read-only database queries map naturally to resources; state-modifying bookmark operations map to tools. This separation signals clients about safe vs. stateful operations.",
+    "wrong_explanations": {
+      "A": "Making everything a tool loses the semantic distinction MCP provides. Resources signal read-only safety, enabling client caching and prefetching.",
+      "C": "Resources are inherently read-only in MCP. State-modifying operations must be modeled as tools, which have explicit invocation semantics.",
+      "D": "Prompts are reusable templates for LLM interactions, not data access mechanisms. Read-only data should use resources."
+    },
+    "difficulty": "intermediate",
+    "tags": ["mcp_primitives", "tools_vs_resources", "server_design", "MCP"]
+  },
+  {
+    "domain": "tool_design_mcp",
+    "scenario": "multi_agent_research",
+    "stem": "Your MCP tool handler encounters an unexpected database connection error. According to MCP best practices, how should this error be returned to the client?",
+    "options": {
+      "A": "Throw a JavaScript exception — the MCP SDK will convert it to a protocol error automatically",
+      "B": "Return a tool result with isError: true and a structured error message describing what failed and why",
+      "C": "Return an empty result with status code 500 — clients should check status codes",
+      "D": "Return a text result saying 'An error occurred' to avoid exposing internal details"
+    },
+    "correct_answer": "B",
+    "explanation": "MCP tool errors should be returned as tool results with isError: true and a descriptive message. This allows the LLM client to understand what failed and potentially recover, retry, or escalate. Throwing unhandled exceptions (A) may crash the server or produce protocol errors that the LLM cannot interpret. HTTP status codes (C) are not part of the MCP tool result protocol. Vague error messages (D) prevent the LLM from taking corrective action.",
+    "wrong_explanations": {
+      "A": "Unhandled exceptions break the MCP protocol flow. Tool errors should be explicitly returned as error results, not thrown.",
+      "C": "MCP tool results don't use HTTP status codes. The isError field and message content carry error information.",
+      "D": "Descriptive error messages help the LLM understand what failed and decide next steps. Vague messages remove this capability."
+    },
+    "difficulty": "intermediate",
+    "tags": ["mcp_error_handling", "isError", "tool_result", "error_format"]
+  },
+  {
+    "domain": "tool_design_mcp",
+    "scenario": "developer_productivity",
+    "stem": "You are choosing a transport for your MCP server that will be used exclusively by Claude Code running on the same machine as the server. Which transport should you use and why?",
+    "options": {
+      "A": "HTTP with SSE transport — it is more robust and supports multiple concurrent clients",
+      "B": "stdio transport — it is the standard for local MCP servers and requires no network setup",
+      "C": "WebSocket transport — it supports bidirectional communication needed for server-to-client notifications",
+      "D": "gRPC transport — it provides better performance for high-frequency tool calls"
+    },
+    "correct_answer": "B",
+    "explanation": "stdio (standard input/output) is the standard transport for local MCP servers. Claude Code launches the server as a child process and communicates via stdin/stdout, requiring no network ports, authentication, or firewall configuration. HTTP/SSE (A) is for remote servers or multi-client scenarios. WebSocket (C) and gRPC (D) are not standard MCP transports.",
+    "wrong_explanations": {
+      "A": "HTTP/SSE adds unnecessary network overhead for a local server. stdio is simpler and is the documented standard for local MCP integration.",
+      "C": "WebSocket is not a standard MCP transport. stdio handles the local communication pattern without needing persistent connections.",
+      "D": "gRPC is not a standard MCP transport. The protocol uses JSON-RPC over stdio or HTTP, not gRPC."
+    },
+    "difficulty": "foundation",
+    "tags": ["stdio_transport", "MCP_transport", "local_server", "configuration"]
+  },
+  {
+    "domain": "tool_design_mcp",
+    "scenario": "customer_support_agent",
+    "stem": "You are designing an MCP tool called lookup_customer that takes a customer identifier. The identifier can be an email address OR a customer ID number, but at least one must be provided. How should the tool schema be structured?",
+    "options": {
+      "A": "Define a single required 'identifier' field accepting either format — document the dual format in the description",
+      "B": "Define 'email' and 'customer_id' as optional fields, and validate in the handler that at least one is provided, returning an error if neither is",
+      "C": "Create two separate tools: lookup_customer_by_email and lookup_customer_by_id",
+      "D": "Define both 'email' and 'customer_id' as required fields with nullable types"
+    },
+    "correct_answer": "B",
+    "explanation": "JSON Schema doesn't express 'at least one of' constraints natively. The correct approach is to define both as optional fields with clear descriptions, then validate in the handler and return an isError result if neither is provided. This gives the LLM the flexibility to provide whichever identifier it has while maintaining semantic clarity. A merged 'identifier' field (A) loses type information. Two separate tools (C) is verbose for identical logic. Both required (D) is overly restrictive.",
+    "wrong_explanations": {
+      "A": "A single 'identifier' field loses the semantic distinction between email and ID formats, making it harder for the LLM to provide the right value.",
+      "C": "Two separate tools duplicate logic and force the LLM to choose between tools rather than simply providing the identifier it has.",
+      "D": "Requiring both fields when only one is needed forces clients to provide unnecessary data or fabricate a value."
+    },
+    "difficulty": "advanced",
+    "tags": ["tool_schema", "JSON_schema", "optional_fields", "validation"]
+  },
+  {
+    "domain": "tool_design_mcp",
+    "scenario": "developer_productivity",
+    "stem": "Your MCP server exposes a prompt template called explain_code that takes a code snippet and explains it for a junior developer. According to MCP primitives, what distinguishes a prompt from a tool?",
+    "options": {
+      "A": "Prompts are server-side functions that execute logic; tools are client-side templates that format requests",
+      "B": "Prompts are reusable message templates that the client injects into LLM conversations; tools are executable functions with side effects",
+      "C": "Prompts only accept text inputs; tools can accept any JSON-serializable type",
+      "D": "Prompts are for end users; tools are for other LLMs in a multi-agent system"
+    },
+    "correct_answer": "B",
+    "explanation": "MCP prompts are reusable message templates that clients retrieve and inject into LLM conversations — they define how to ask Claude to do something. MCP tools are executable functions that Claude invokes to take actions or retrieve data, potentially with side effects. The distinction is: prompts = templates for conversations; tools = functions with behavior. (A) has the definitions reversed. (C) and (D) are incorrect descriptions of both primitives.",
+    "wrong_explanations": {
+      "A": "This reverses the definitions. Prompts are templates (not logic), and tools are server-side functions (not client-side templates).",
+      "C": "Both prompts and tools can accept various input types. The distinction is about purpose and behavior, not data types.",
+      "D": "Both prompts and tools can be used by end users and LLMs. The distinction is execution semantics, not intended audience."
+    },
+    "difficulty": "intermediate",
+    "tags": ["mcp_prompts", "mcp_primitives", "tools_vs_prompts", "MCP"]
+  },
+  {
+    "domain": "context_reliability",
+    "scenario": "multi_agent_research",
+    "stem": "Your research orchestrator makes the same API call to Claude at the start of every task, always including a 10,000-token system prompt describing the research methodology. How should you optimize this for cost and latency?",
+    "options": {
+      "A": "Compress the system prompt to under 1,000 tokens by removing detail",
+      "B": "Move the system prompt to the user message to avoid system prompt processing overhead",
+      "C": "Apply cache_control with type 'ephemeral' to the system prompt so it is cached after the first request",
+      "D": "Split the system prompt across multiple API calls so no single call exceeds token limits"
+    },
+    "correct_answer": "C",
+    "explanation": "Prompt caching with cache_control type 'ephemeral' allows Claude to cache the system prompt after the first request. Subsequent requests with the same cached content benefit from reduced processing cost and latency. This is ideal for static content (methodology docs, instructions) that repeats across many requests. Compressing (A) loses information. Moving to user message (B) doesn't affect caching. Splitting across calls (D) adds complexity with no benefit.",
+    "wrong_explanations": {
+      "A": "Compressing the prompt reduces information quality. Prompt caching preserves the full prompt while eliminating repeated processing cost.",
+      "B": "The prompt cache applies to both system and user messages. Moving content between them doesn't trigger caching automatically.",
+      "D": "Splitting across multiple API calls adds complexity and roundtrip latency with no performance benefit. Caching is the correct optimization."
+    },
+    "difficulty": "intermediate",
+    "tags": ["prompt_caching", "cache_control", "cost_optimization", "latency"]
+  },
+  {
+    "domain": "context_reliability",
+    "scenario": "customer_support_agent",
+    "stem": "Your Customer Support Agent handles very long conversations. After many turns, the context window approaches its limit. What is the correct strategy for handling this while preserving the agent's ability to continue?",
+    "options": {
+      "A": "Throw an error and ask the user to start a new conversation",
+      "B": "Silently drop the oldest messages from conversation history to stay within the window",
+      "C": "Summarize older conversation turns and replace them with the summary, preserving recent messages in full",
+      "D": "Switch to a model with a larger context window automatically"
+    },
+    "correct_answer": "C",
+    "explanation": "The sliding window with summarization strategy preserves semantic continuity: older turns are compressed into a summary that captures key decisions, facts, and context, while recent turns remain in full. This keeps the agent functional with minimal information loss. Silent truncation (B) can lose critical context (e.g., the original user request). Throwing an error (A) is poor UX. Switching models (D) may not be practical and doesn't solve the fundamental problem.",
+    "wrong_explanations": {
+      "A": "Forcing conversation restarts is poor UX and loses all context from the session. The agent should handle context limits transparently.",
+      "B": "Silent truncation of older messages risks losing critical context — including the original user request — which can cause the agent to contradict earlier decisions.",
+      "D": "Switching models adds latency and cost, and larger context windows have the same fundamental limit — eventually a strategy is needed."
+    },
+    "difficulty": "intermediate",
+    "tags": ["context_window", "sliding_window", "summarization", "long_conversations"]
+  },
+  {
+    "domain": "context_reliability",
+    "scenario": "structured_data_extraction",
+    "stem": "Your document extraction pipeline needs to process 50,000 contracts overnight. Processing is not time-sensitive — results need to be ready by morning. Which API approach is most cost-effective?",
+    "options": {
+      "A": "Use the standard Messages API with 50,000 sequential requests, processing one contract at a time",
+      "B": "Use the standard Messages API with 50 concurrent batches of 1,000 requests each",
+      "C": "Use the Batch API to submit all 50,000 requests asynchronously and retrieve results when complete",
+      "D": "Use streaming with the standard API to process each contract faster"
+    },
+    "correct_answer": "C",
+    "explanation": "The Batch API is designed exactly for this use case: large volumes of non-time-sensitive requests processed asynchronously. It offers a 50% cost reduction compared to the standard API and handles high concurrency without rate limit management. Sequential processing (A) would take days. Manual concurrency management (B) is complex and subject to rate limits. Streaming (D) improves perceived latency but doesn't reduce cost or throughput.",
+    "wrong_explanations": {
+      "A": "50,000 sequential requests would be extremely slow. The Batch API is the correct tool for asynchronous, high-volume work.",
+      "B": "Manual concurrency is complex and still subject to rate limiting. The Batch API handles this natively with lower cost.",
+      "D": "Streaming reduces time-to-first-token for interactive use but doesn't help with throughput for batch processing."
+    },
+    "difficulty": "intermediate",
+    "tags": ["batch_api", "cost_optimization", "async_processing", "throughput"]
+  },
+  {
+    "domain": "context_reliability",
+    "scenario": "code_generation",
+    "stem": "Your Code Generation agent's tool run_linter returns 500 lines of lint warnings. Including the full output in each API call's context is consuming most of the context window. What is the correct approach?",
+    "options": {
+      "A": "Increase max_tokens to accommodate larger tool results",
+      "B": "Truncate tool results to a fixed limit (e.g., 5,000 tokens) and include a note that results were truncated",
+      "C": "Store full tool results externally and only include a summary or the most relevant portion in the context",
+      "D": "Disable the linter tool since its output consumes too many tokens"
+    },
+    "correct_answer": "C",
+    "explanation": "Token budgeting for tool results involves storing full results externally and injecting only what's necessary into context. For linter output, this might mean: summarizing categories of warnings, including only errors (not warnings), or using a tool to filter to the most actionable items. Increasing max_tokens (A) doesn't help when input context is the bottleneck. Blind truncation (B) may cut off critical warnings. Disabling the tool (D) loses its value.",
+    "wrong_explanations": {
+      "A": "max_tokens controls output length, not input context. If the context is full from input tokens, increasing max_tokens doesn't help.",
+      "B": "Blind truncation at a fixed character limit may cut off the most important warnings. Intelligent summarization is preferable.",
+      "D": "Disabling the linter removes its value. The goal is to use it efficiently, not to eliminate it."
+    },
+    "difficulty": "advanced",
+    "tags": ["token_budget", "tool_results", "context_management", "optimization"]
+  },
+  {
+    "domain": "context_reliability",
+    "scenario": "structured_data_extraction",
+    "stem": "Your extraction pipeline calls an external API that occasionally returns 429 (rate limit) or 503 (service unavailable) errors. What is the correct retry strategy?",
+    "options": {
+      "A": "Retry immediately up to 10 times — fast retries catch transient failures quickly",
+      "B": "Retry with exponential backoff and jitter: wait 1s, 2s, 4s, 8s... with random jitter added to each interval",
+      "C": "Retry exactly once after a fixed 5-second delay, then fail permanently",
+      "D": "Log the error and skip the document — data completeness is less important than pipeline stability"
+    },
+    "correct_answer": "B",
+    "explanation": "Exponential backoff with jitter is the standard pattern for rate-limited APIs: wait times double with each retry, spreading load over time. Jitter prevents thundering herd problems where many clients retry simultaneously. Immediate retries (A) can worsen rate limiting. Fixed single retry (C) may miss a slow recovery. Silently skipping (D) produces incomplete data without alerting operators.",
+    "wrong_explanations": {
+      "A": "Immediate retries compound the rate limit problem — you send more requests exactly when the service is overloaded.",
+      "C": "A single fixed retry is insufficient for services that may take longer to recover. Exponential backoff accommodates varied recovery times.",
+      "D": "Silent data loss is unacceptable. Errors should be retried and then reported/alerted if retries are exhausted."
+    },
+    "difficulty": "foundation",
+    "tags": ["retry_strategy", "exponential_backoff", "jitter", "reliability"]
+  }
+]
